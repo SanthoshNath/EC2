@@ -1,5 +1,5 @@
 variable "name_prefix" {
-  description = "Prefix for resource and tag names"
+  description = "Prefix to name resources and tags"
   type        = string
   nullable    = false
 }
@@ -12,39 +12,21 @@ variable "ingress_cidr_blocks" {
 }
 
 # VPC
-variable "vpc_cidr_block" {
-  description = "VPC CIDR"
+variable "vpc_id" {
+  description = "VPC ID"
   type        = string
   nullable    = false
 }
 
-variable "public_subnets_count" {
-  description = "Number of public subnets to create. If load balancer is enabled, public_subnet_count value should be minimum of 2"
-  default     = 2
-  type        = number
+variable "vpc_cidr" {
+  description = "VPC CIDR block"
+  type        = string
   nullable    = false
-
-  validation {
-    condition     = var.public_subnets_count % 1 == 0 && var.public_subnets_count > 0
-    error_message = "Number of public subnets should be a non zero whole number"
-  }
 }
 
-variable "private_subnets_count" {
-  description = "Number of private subnets to create"
-  default     = 0
-  type        = number
-  nullable    = false
-
-  validation {
-    condition     = var.private_subnets_count % 1 == 0 && var.private_subnets_count >= 0
-    error_message = "Number of private subnets should be a whole number"
-  }
-}
-
-variable "enable_nat_gateway" {
+variable "nat_gateway_enabled" {
   description = "Switch to enable or disable NAT gateway"
-  default     = false
+  default     = true
   type        = bool
   nullable    = false
 }
@@ -58,6 +40,12 @@ variable "instance_ami" {
 
 variable "instance_type" {
   description = "Type of the instance"
+  type        = string
+  nullable    = false
+}
+
+variable "subnet_id" {
+  description = "Subnet where instance to be created"
   type        = string
   nullable    = false
 }

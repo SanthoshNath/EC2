@@ -14,10 +14,11 @@ locals {
   ))
 }
 
+# EC2
 resource "aws_instance" "this" {
   ami                    = var.instance_ami
   instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public[0].id
+  subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.instance.id]
   user_data              = var.user_data_path != null ? templatefile(var.user_data_path, var.user_data_arguments) : null
   iam_instance_profile   = aws_iam_instance_profile.this.name
@@ -53,7 +54,7 @@ resource "aws_iam_role_policy_attachment" "this" {
 
 resource "aws_security_group" "instance" {
   name   = "${var.name_prefix}-instance-security-group"
-  vpc_id = aws_vpc.this.id
+  vpc_id = var.vpc_id
 
   egress {
     from_port   = 0
@@ -72,5 +73,46 @@ resource "aws_security_group" "instance" {
 
   tags = {
     Name = "${var.name_prefix}_instance_security_group"
+  }
+}
+
+# VPC endpoint
+resource "aws_vpc_endpoint" "this" {
+  for_each = !var.nat_gateway_enabled ? toset(["ec2messages", "ssmmessages", "ssm"]) : []
+
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.${each.value}"
+  vpc_id              = var.vpc_id
+  subnet_ids          = data.aws_subnets.private.ids
+  security_group_ids  = [aws_security_group.vpc_endpoint[0].id]
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  tags = {
+    Name = "${var.name_prefix}_${each.value}"
+  }
+}
+
+resource "aws_security_group" "vpc_endpoint" {
+  count = !var.nat_gateway_enabled ? 1 : 0
+
+  name   = "${var.name_prefix}-vpc_endpoint-security-group"
+  vpc_id = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  tags = {
+    Name = "${var.name_prefix}_vpc_endpoint"
   }
 }

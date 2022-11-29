@@ -11,6 +11,4 @@ output "instance_public_ip" {
 output "alb_dns" {
   description = "DNS of application load balancer. Output defined only if load balancer is enabled"
   value       = var.enable_load_balancer ? aws_lb.this[0].dns_name : null
-
-  depends_on = [aws_lb.this]
 }
